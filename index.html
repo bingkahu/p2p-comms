@@ -3,231 +3,233 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CodeChat | ADMIN</title>
+    <title>CodeChat | v3.1</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
     <style>
-        :root { --accent: #3b82f6; --red: #ff4b4b; --gold: #ffd700; --bg: #030303; --panel: #0a0a0a; }
+        :root { --primary: #3b82f6; --danger: #f43f5e; --warning: #f59e0b; --bg: #0a0a0b; --sidebar: #111113; --card: #18181b; }
+        * { box-sizing: border-box; transition: all 0.2s ease; }
+        body, html { margin: 0; padding: 0; height: 100vh; background: var(--bg); font-family: 'Plus Jakarta Sans', sans-serif; color: #e4e4e7; overflow: hidden; }
+
+        /* Admin Overlay */
+        #admin-overlay { 
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); 
+            z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(12px);
+        }
+        .admin-card { 
+            background: var(--sidebar); border: 1px solid #27272a; width: 480px; padding: 32px; 
+            border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); position: relative;
+        }
+        .close-btn { position: absolute; top: 24px; right: 24px; cursor: pointer; color: #52525b; font-size: 20px; }
+
+        /* Layout */
+        #main-layout { display: grid; grid-template-columns: 320px 1fr; height: 100vh; display: none; }
+        #sidebar { background: var(--sidebar); border-right: 1px solid #27272a; padding: 32px; display: flex; flex-direction: column; gap: 24px; }
+        #chat-view { display: flex; flex-direction: column; height: 100vh; background: var(--bg); }
+        #chat-logs { flex: 1; overflow-y: auto; padding: 40px; display: flex; flex-direction: column; gap: 16px; scroll-behavior: smooth; }
         
-        body, html { margin: 0; padding: 0; height: 100vh; background: var(--bg); font-family: 'Inter', sans-serif; color: #fff; overflow: hidden; }
+        /* Messages */
+        .msg-box { padding: 16px 20px; border-radius: 16px; background: var(--card); border: 1px solid #27272a; max-width: 85%; align-self: flex-start; }
+        .msg-box.me { align-self: flex-end; border-color: var(--primary); background: rgba(59, 130, 246, 0.1); }
+        .sender-tag { font-family: 'JetBrains Mono'; font-size: 11px; font-weight: 800; color: var(--primary); margin-bottom: 6px; text-transform: uppercase; }
 
-        /* Admin Slide-out Drawer */
-        #admin-drawer { 
-            position: fixed; top: 0; left: -360px; width: 340px; height: 100vh; 
-            background: #080808; border-right: 2px solid var(--red); z-index: 4000; 
-            transition: left 0.4s cubic-bezier(0.16, 1, 0.3, 1); padding: 30px;
-            box-shadow: 20px 0 80px rgba(0,0,0,0.9); box-sizing: border-box;
-            display: flex; flex-direction: column; gap: 20px;
+        /* UI Elements */
+        input { background: #050506; border: 1px solid #27272a; border-radius: 12px; padding: 14px; color: #fff; outline: none; font-size: 14px; width: 100%; }
+        input:focus { border-color: var(--primary); }
+        .btn { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 14px; }
+        .btn-danger { background: var(--danger); }
+        .btn-ghost { background: transparent; border: 1px solid #27272a; color: #a1a1aa; }
+
+        #broadcast-banner { 
+            display: none; position: fixed; top: 24px; left: 50%; transform: translateX(-50%);
+            background: var(--danger); padding: 12px 32px; border-radius: 100px;
+            z-index: 10000; font-weight: 800; box-shadow: 0 10px 25px rgba(244, 63, 94, 0.4);
+            animation: slideIn 0.3s ease-out;
         }
-        #admin-drawer.open { left: 0; }
-        .close-drawer { align-self: flex-end; cursor: pointer; color: #555; font-size: 24px; font-weight: 900; }
+        @keyframes slideIn { from { transform: translate(-50%, -100%); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
 
-        /* User Management List */
-        #user-list { 
-            background: #111; border: 1px solid #222; border-radius: 8px; 
-            max-height: 150px; overflow-y: auto; margin-top: 10px;
-        }
-        .user-item { 
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 8px 12px; border-bottom: 1px solid #222; font-size: 12px;
-        }
-        .kick-btn { background: var(--red); color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: 700; }
-
-        /* Chat UI Components */
-        #container { display: grid; grid-template-columns: 280px 1fr; height: 100vh; display: none; }
-        #sidebar { background: var(--panel); border-right: 1px solid #1a1a1a; padding: 25px; display: flex; flex-direction: column; gap: 20px; }
-        #chat-arena { display: flex; flex-direction: column; height: 100vh; background: #000; }
-        #logs { flex: 1; overflow-y: auto; padding: 30px; display: flex; flex-direction: column; gap: 15px; }
-        .msg { padding: 16px; border-radius: 10px; background: rgba(255,255,255,0.03); border-left: 3px solid var(--accent); }
-        .sender { font-size: 11px; font-weight: 900; color: var(--accent); margin-bottom: 6px; text-transform: uppercase; }
-
-        #admin-broadcast { 
-            display: none; position: fixed; top: 30px; left: 50%; transform: translateX(-50%);
-            background: var(--red); padding: 15px 40px; border-radius: 50px;
-            z-index: 5000; font-weight: 900; box-shadow: 0 0 40px rgba(255, 75, 75, 0.4);
-        }
-
-        #footer { padding: 25px; background: var(--panel); border-top: 1px solid #1a1a1a; display: flex; gap: 15px; }
-        input { background: #111; border: 1px solid #222; border-radius: 8px; padding: 14px; color: #fff; outline: none; width: 100%; }
-        .btn { background: var(--accent); color: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; }
-        #fx-canvas { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 3000; }
+        #user-table { margin-top: 12px; background: #050506; border-radius: 12px; border: 1px solid #27272a; max-height: 140px; overflow-y: auto; }
+        .user-row { display: flex; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid #18181b; align-items: center; font-size: 13px; }
+        #fx-layer { position: fixed; inset: 0; pointer-events: none; z-index: 9000; }
     </style>
 </head>
 <body>
 
-<canvas id="fx-canvas"></canvas>
-<div id="admin-broadcast">📢 <span id="bc-msg"></span></div>
+<canvas id="fx-layer"></canvas>
+<div id="broadcast-banner">ALERT: <span id="bc-text"></span></div>
 
-<div id="admin-drawer">
-    <div class="close-drawer" onclick="toggleDrawer()">✕</div>
-    <h2 style="color:var(--red); font-size: 16px; margin: 0;">ROOT CONSOLE</h2>
-    
-    <div id="user-mgmt">
-        <label style="font-size:10px; color:#555; font-weight: 800;">ACTIVE NODES</label>
-        <div id="user-list">
-            <div class="user-item" style="color:#444"><i>Waiting for connection...</i></div>
-        </div>
-    </div>
-
-    <div>
-        <label style="font-size:10px; color:#555; font-weight: 800;">REMOTE FX COMMANDS</label>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
-            <button class="btn" style="background:var(--gold); color:#000" onclick="cmd('rain')">Coin Rain</button>
-            <button class="btn" style="background:purple" onclick="cmd('glitch')">Glitch UI</button>
-            <button class="btn" style="background:#0f0; color:#000" onclick="cmd('matrix')">Matrix FX</button>
-            <button class="btn" style="background:#fff; color:#000" id="freeze-btn" onclick="cmd('freeze')">Mute All</button>
-        </div>
-    </div>
-
-    <div>
-        <label style="font-size:10px; color:#555; font-weight: 800;">GLOBAL ALERT</label>
-        <input type="text" id="bc-in" placeholder="Announcement message..." style="margin-top:10px;">
-        <button class="btn" style="background:var(--red); width:100%; margin-top:5px;" onclick="cmd('bc')">Send Broadcast</button>
-    </div>
-</div>
-
-<div id="auth-screen" style="position:fixed; inset:0; background:#000; z-index:9000; display:flex; align-items:center; justify-content:center;">
-    <div style="background:var(--panel); padding:50px; border-radius:24px; border:1px solid #1a1a1a; width:340px; text-align:center;">
-        <h1 style="font-weight:900;">CodeChat</h1>
-        <input type="text" id="l-user" placeholder="Identity" style="margin-bottom:12px;">
-        <input type="password" id="l-pass" placeholder="Password" style="margin-bottom:25px;">
-        <button class="btn" onclick="auth()" style="width:100%; padding:16px;">Initialize</button>
-    </div>
-</div>
-
-<div id="container">
-    <div id="sidebar">
-        <h2 style="font-weight:900; font-size:24px;">Code<span style="color:var(--accent)">Chat</span></h2>
-        <button class="btn" id="admin-toggle-btn" style="display:none; background:var(--red);" onclick="toggleDrawer()">ADMIN PANEL</button>
+<div id="admin-overlay">
+    <div class="admin-card">
+        <span class="close-btn" onclick="toggleAdmin()">✕</span>
+        <h2 style="margin:0 0 8px; font-size:20px; font-weight:800;">Command Center</h2>
+        <div id="user-table"></div>
         <div style="margin-top:20px;">
-            <label style="font-size:10px; color:#555;">LINK TARGET</label>
-            <input type="text" id="peer-join" placeholder="Target ID" style="margin-top:10px;">
-            <button class="btn" onclick="connect()" style="width:100%; margin-top:8px;">Connect</button>
+            <input type="text" id="bc-input" placeholder="Type global alert...">
+            <button class="btn btn-danger" style="width:100%; margin-top:10px;" onclick="execute('bc')">BROADCAST WITH SOUND</button>
         </div>
-        <div style="margin-top:auto;">
-            <label style="font-size:10px; color:#555;">YOUR ID</label>
-            <div id="id-box" style="color:var(--accent); font-weight:900; font-family:monospace;">--------</div>
+        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; margin-top:20px;">
+            <button class="btn btn-ghost" onclick="execute('rain')">💰 Rain</button>
+            <button class="btn btn-ghost" onclick="execute('matrix')">🧪 Matrix</button>
+            <button class="btn btn-ghost" onclick="execute('glitch')">☣️ Glitch</button>
+            <button class="btn btn-ghost" id="mute-btn" onclick="execute('mute')">🔇 Mute</button>
+            <button class="btn btn-ghost" onclick="execute('wipe')">🧹 Wipe</button>
+            <button class="btn btn-danger" onclick="execute('kick_all')">💀 Kill</button>
         </div>
     </div>
-    <div id="chat-arena">
-        <div id="logs"></div>
-        <div id="footer">
-            <input type="text" id="msg-in" placeholder="Type here...">
-            <button class="btn" id="send-btn" onclick="send()">SEND</button>
+</div>
+
+<div id="login-screen" style="position:fixed; inset:0; background:var(--bg); z-index:10001; display:flex; align-items:center; justify-content:center;">
+    <div style="width:360px; text-align:center;">
+        <h1 style="font-weight:900;">CodeChat</h1>
+        <input type="text" id="user-id" placeholder="Display Name" style="margin-bottom:12px;">
+        <input type="password" id="pass-id" placeholder="Admin Key">
+        <button class="btn" style="margin-top:24px; width:100%;" onclick="startApp()">Initialize & Enable Audio</button>
+    </div>
+</div>
+
+<div id="main-layout">
+    <div id="sidebar">
+        <h2 style="font-weight:900;">CodeChat</h2>
+        <button class="btn btn-danger" id="admin-trigger" style="display:none;" onclick="toggleAdmin()">ADMIN PANEL</button>
+        <input type="text" id="target-id" placeholder="Partner ID">
+        <button class="btn" onclick="dial()">CONNECT</button>
+        <div style="margin-top:auto;">
+            <label style="font-size:10px; color:#52525b;">YOUR ID</label>
+            <div id="my-id-display" style="font-family:'JetBrains Mono'; font-size:20px; color:var(--primary); font-weight:800;">------</div>
+        </div>
+    </div>
+    <div id="chat-view">
+        <div id="chat-logs"></div>
+        <div style="padding:32px; background:rgba(10,10,11,0.8); backdrop-filter:blur(10px); display:flex; gap:16px; border-top:1px solid #27272a;">
+            <input type="text" id="chat-input" placeholder="Transmission...">
+            <button class="btn" style="width:120px;" onclick="post()">SEND</button>
         </div>
     </div>
 </div>
 
 <script>
-    const d=document, aKey = "AdminBingkahu2014!";
-    let user="", isAdmin=false, peer, conn, activePeers = {};
+    const d=document, KEY = "AdminBingkahu2014!";
+    let me="", isAdmin=false, myPeer, peerConns = {}, isMuted=false;
 
-    function auth() {
-        const u = d.getElementById('l-user').value, p = d.getElementById('l-pass').value;
-        if(!u) return; user = u;
-        if(p === aKey) { isAdmin=true; d.getElementById('admin-toggle-btn').style.display='block'; }
-        d.getElementById('auth-screen').style.display='none';
-        d.getElementById('container').style.display='grid';
-        init();
-    }
+    // --- Audio Engine ---
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSound(type) {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
 
-    function init() {
-        const id = Math.random().toString(36).substr(2, 6).toUpperCase();
-        peer = new Peer(id);
-        peer.on('open', i => d.getElementById('id-box').innerText = i);
-        peer.on('connection', x => { conn = x; setupConn(x); });
-    }
-
-    function connect() {
-        const target = d.getElementById('peer-join').value.toUpperCase();
-        conn = peer.connect(target);
-        setupConn(conn);
-    }
-
-    function setupConn(c) {
-        c.on('open', () => {
-            // Send our name to the other person immediately
-            c.send({type: 'ID_ANNOUNCE', name: user});
-            updateUserList(c.peer, "Connecting...");
-        });
-
-        c.on('data', data => {
-            if(data.type === 'ID_ANNOUNCE') updateUserList(c.peer, data.name);
-            if(data.type === 'BC') showBC(data.val);
-            if(data.type === 'KICK') { alert("Kicked by admin"); location.reload(); }
-            if(data.type === 'RAIN') startFx('coin');
-            if(data.text) addMsg(data.name, data.text);
-        });
-    }
-
-    function updateUserList(peerId, name) {
-        activePeers[peerId] = name;
-        const list = d.getElementById('user-list');
-        list.innerHTML = "";
-        for (let id in activePeers) {
-            list.innerHTML += `
-                <div class="user-item">
-                    <span>${activePeers[id]} (${id})</span>
-                    <button class="kick-btn" onclick="kickUser('${id}')">KICK</button>
-                </div>`;
+        if(type === 'msg') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+        } else if (type === 'admin') {
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(110, audioCtx.currentTime);
+            osc.frequency.linearRampToValueAtTime(220, audioCtx.currentTime + 0.2);
+            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.3);
         }
     }
 
-    function kickUser(id) {
-        if(conn && conn.peer === id) {
-            conn.send({type: 'KICK'});
-            delete activePeers[id];
-            updateUserList();
+    function startApp() {
+        me = d.getElementById('user-id').value || "Guest";
+        if(d.getElementById('pass-id').value === KEY) { isAdmin=true; d.getElementById('admin-trigger').style.display='block'; }
+        audioCtx.resume(); // Unlock audio on user gesture
+        d.getElementById('login-screen').style.display='none';
+        d.getElementById('main-layout').style.display='grid';
+        initPeer();
+    }
+
+    function toggleAdmin() { d.getElementById('admin-overlay').style.display = (d.getElementById('admin-overlay').style.display==='flex') ? 'none' : 'flex'; }
+
+    function initPeer() {
+        myPeer = new Peer(Math.random().toString(36).substr(2, 6).toUpperCase());
+        myPeer.on('open', i => d.getElementById('my-id-display').innerText = i);
+        myPeer.on('connection', c => handleConn(c));
+    }
+
+    function dial() { handleConn(myPeer.connect(d.getElementById('target-id').value.toUpperCase())); }
+
+    function handleConn(conn) {
+        conn.on('open', () => {
+            peerConns[conn.peer] = { conn, name: "Node" };
+            conn.send({type: 'SYNC', name: me});
+            refreshUserList();
+        });
+        conn.on('data', data => {
+            if(data.type === 'SYNC') { peerConns[conn.peer].name = data.name; refreshUserList(); }
+            if(data.type === 'MSG') { renderMsg(data.name, data.text); playSound('msg'); }
+            if(data.type === 'BC') { doBC(data.val); playSound('admin'); }
+            if(data.type === 'FX') startFX(data.mode);
+            if(data.type === 'MUTE') { isMuted = data.val; d.getElementById('chat-input').disabled = isMuted; }
+            if(data.type === 'WIPE') d.getElementById('chat-logs').innerHTML = "";
+            if(data.type === 'KILL') location.reload();
+        });
+    }
+
+    function refreshUserList() {
+        const t = d.getElementById('user-table'); t.innerHTML = "";
+        for(let id in peerConns) {
+            t.innerHTML += `<div class="user-row"><span>${peerConns[id].name}</span><button class="btn btn-danger" style="padding:4px 10px; font-size:10px;" onclick="kick('${id}')">KICK</button></div>`;
         }
     }
 
-    function toggleDrawer() { d.getElementById('admin-drawer').classList.toggle('open'); }
+    function kick(id) { if(peerConns[id]) peerConns[id].conn.send({type:'KILL'}); }
 
-    function showBC(val) {
-        const bar = d.getElementById('admin-broadcast');
-        d.getElementById('bc-msg').innerText = val;
-        bar.style.display = 'block';
-        setTimeout(() => { bar.style.display = 'none'; }, 10000);
+    function execute(cmd) {
+        const val = d.getElementById('bc-input').value;
+        for(let id in peerConns) {
+            let c = peerConns[id].conn;
+            if(cmd==='bc') c.send({type:'BC', val});
+            if(cmd==='rain' || cmd==='matrix' || cmd==='glitch') c.send({type:'FX', mode:cmd});
+            if(cmd==='mute') { isMuted=!isMuted; c.send({type:'MUTE', val:isMuted}); }
+            if(cmd==='wipe') c.send({type:'WIPE'});
+            if(cmd==='kick_all') c.send({type:'KILL'});
+        }
+        if(cmd==='bc') { doBC(val); playSound('admin'); }
+        if(cmd==='rain' || cmd==='matrix') startFX(cmd);
+        if(cmd==='wipe') d.getElementById('chat-logs').innerHTML = "";
     }
 
-    function cmd(type) {
-        if(!isAdmin || !conn) return;
-        const v = d.getElementById('bc-in').value;
-        if(type==='bc') { conn.send({type:'BC', val:v}); showBC(v); }
-        if(type==='rain') { conn.send({type:'RAIN'}); startFx('coin'); }
-        // (Other commands follow same logic)
+    function doBC(v) { d.getElementById('bc-text').innerText = v; d.getElementById('broadcast-banner').style.display='block'; setTimeout(()=>d.getElementById('broadcast-banner').style.display='none', 8000); }
+    
+    function renderMsg(n, t) {
+        const b = d.createElement('div');
+        b.className = `msg-box ${n===me ? 'me' : ''}`;
+        b.innerHTML = `<div class="sender-tag">${n}</div><div>${t}</div>`;
+        d.getElementById('chat-logs').appendChild(b);
+        d.getElementById('chat-logs').scrollTop = d.getElementById('chat-logs').scrollHeight;
     }
 
-    function addMsg(n, t) {
-        const b = d.createElement('div'); b.className = 'msg';
-        b.innerHTML = `<div class="sender">${n}</div>${t}`;
-        d.getElementById('logs').appendChild(b);
-        d.getElementById('logs').scrollTop = d.getElementById('logs').scrollHeight;
+    function post() {
+        const i = d.getElementById('chat-input');
+        if(!i.value || isMuted) return;
+        for(let id in peerConns) peerConns[id].conn.send({type:'MSG', name:me, text:i.value});
+        renderMsg(me, i.value); i.value="";
     }
 
-    function send() {
-        const i = d.getElementById('msg-in');
-        if(!i.value || !conn) return;
-        conn.send({name: user, text: i.value});
-        addMsg(user, i.value);
-        i.value = "";
-    }
-
-    // Effect logic (Standardized)
-    const canvas = d.getElementById('fx-canvas'), ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-    function startFx(t) {
-        let p = []; for(let i=0; i<80; i++) p.push({x:Math.random()*canvas.width, y:-Math.random()*800, s:Math.random()*5+5});
-        const draw = () => {
-            ctx.clearRect(0,0,canvas.width, canvas.height);
-            let live = false;
-            p.forEach(c => {
-                c.y += c.s; if(c.y < canvas.height+50) live = true;
-                ctx.fillStyle = '#ffd700'; ctx.beginPath(); ctx.arc(c.x, c.y, 6, 0, 7); ctx.fill();
+    const canv = d.getElementById('fx-layer'), cx = canv.getContext('2d');
+    canv.width = window.innerWidth; canv.height = window.innerHeight;
+    function startFX(m) {
+        let p = []; for(let i=0; i<60; i++) p.push({x:Math.random()*canv.width, y:-Math.random()*1000, s:Math.random()*5+3});
+        const run = () => {
+            cx.clearRect(0,0,canv.width, canv.height);
+            let active = false;
+            p.forEach(item => {
+                item.y += item.s; if(item.y < canv.height+20) active = true;
+                cx.fillStyle = m==='rain' ? '#fbbf24' : '#22c55e';
+                if(m==='rain') { cx.beginPath(); cx.arc(item.x, item.y, 5, 0, 7); cx.fill(); }
+                else { cx.font='14px monospace'; cx.fillText(String.fromCharCode(0x30A0 + Math.random()*96), item.x, item.y); }
             });
-            if(live) requestAnimationFrame(draw);
-        }; draw();
+            if(active) requestAnimationFrame(run);
+        }; run();
     }
+    d.onkeypress = (e) => { if(e.key==='Enter') post(); };
 </script>
 </body>
 </html>
