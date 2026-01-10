@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>CodeChat | v5.8 Pulse (Full Build)</title>
+    <title>CodeChat | v6.2 Pulse (Request Fix)</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
     <style>
@@ -10,27 +10,24 @@
         * { box-sizing: border-box; transition: all 0.2s ease; }
         body, html { margin: 0; padding: 0; height: 100vh; background: var(--bg); font-family: 'Plus Jakarta Sans', sans-serif; color: #ececed; overflow: hidden; }
 
-        /* Notification UI */
-        #notif-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
-        .toast { pointer-events: auto; background: var(--panel); border: 1px solid #333; padding: 18px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); min-width: 280px; animation: slideIn 0.3s ease forwards; }
-        @keyframes slideIn { from { transform: translateX(110%); } to { transform: translateX(0); } }
+        /* Notification Toast */
+        #notif-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        .toast { background: var(--panel); border: 2px solid #333; padding: 20px; border-radius: 16px; box-shadow: 0 15px 40px rgba(0,0,0,0.9); min-width: 300px; animation: slideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes slideIn { from { transform: translateX(120%); } to { transform: translateX(0); } }
 
-        /* Layout */
         #app-shell { display: grid; grid-template-columns: 320px 1fr; height: 100vh; display: none; }
         #nav-bar { background: var(--sidebar); border-right: 1px solid #27272a; padding: 30px; display: flex; flex-direction: column; }
-        #stage { position: relative; height: 100vh; background: var(--bg); display: flex; flex-direction: column; }
-
+        
         #message-stream { flex: 1; overflow-y: auto; padding: 40px; display: flex; flex-direction: column; gap: 12px; }
-        .bubble { padding: 14px 20px; border-radius: 18px; background: var(--panel); border: 1px solid #222; max-width: 75%; font-size: 14px; }
+        .bubble { padding: 14px 20px; border-radius: 18px; background: var(--panel); border: 1px solid #222; max-width: 75%; }
         .bubble.me { align-self: flex-end; background: var(--primary); border: none; }
-        .tag { font-size: 10px; font-weight: 800; opacity: 0.5; margin-bottom: 4px; text-transform: uppercase; }
 
-        /* Video Elements */
+        /* Video Stage */
         #video-interface { display: none; position: absolute; inset: 0; background: #000; z-index: 100; }
         #remote-video { width: 100%; height: 100%; object-fit: cover; }
         #local-video { position: absolute; bottom: 30px; right: 30px; width: 220px; border-radius: 20px; border: 2px solid var(--primary); transform: scaleX(-1); }
 
-        .btn { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 12px; font-weight: 700; cursor: pointer; text-align: center; }
+        .btn { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 12px; font-weight: 700; cursor: pointer; }
         .btn-call { background: var(--success); margin-top: 10px; display: none; }
         input { background: #0b0b0d; border: 1px solid #27272a; border-radius: 12px; padding: 14px; color: #fff; width: 100%; outline: none; }
         #entry-gate { position: fixed; inset: 0; background: var(--bg); z-index: 10000; display: flex; align-items: center; justify-content: center; }
@@ -42,25 +39,24 @@
 
 <div id="entry-gate">
     <div style="width:360px; text-align:center; background:var(--panel); padding:50px; border-radius:40px; border:1px solid #222;">
-        <h1 style="margin-bottom:30px; font-weight: 900;">CodeChat</h1>
-        <input type="text" id="u-name" placeholder="Username" style="margin-bottom:12px;">
-        <input type="password" id="u-pass" placeholder="Password" style="margin-bottom:25px;">
-        <button class="btn" style="width:100%;" onclick="init()">Access Protocol</button>
+        <h1 style="margin-bottom:30px;">CodeChat</h1>
+        <input type="text" id="u-name" placeholder="Username" style="margin-bottom:20px;">
+        <button class="btn" style="width:100%;" onclick="init()">Join Network</button>
     </div>
 </div>
 
 <div id="app-shell">
     <div id="nav-bar">
-        <h2 style="font-weight: 900;">Sentinel</h2>
-        <label style="font-size:10px; color:#555; margin-top:30px; font-weight: 800;">REMOTE NODE</label>
-        <input type="text" id="target-id" placeholder="Enter ID..." style="margin:10px 0; text-transform: uppercase;">
+        <h2>Sentinel</h2>
+        <label style="font-size:10px; color:#555; margin-top:30px;">TARGET PEER</label>
+        <input type="text" id="target-id" placeholder="Paste ID..." style="margin:10px 0; text-transform: uppercase;">
         <button class="btn" onclick="connect()">Connect</button>
         <button class="btn btn-call" id="call-btn" onclick="requestCall()">START VIDEO CALL</button>
 
         <div style="margin-top:auto;">
-            <label style="font-size:10px; color:#555;">MY NODE ID</label>
-            <div id="my-id" style="font-family:'JetBrains Mono'; color:var(--primary); font-size:24px; padding:15px; background:#000; border-radius:12px; text-align:center; margin-top: 10px;">---</div>
-            <button class="btn" style="width:100%; margin-top:20px; background:transparent; border:1px solid #333; color: #555;" onclick="location.reload()">TERMINATE</button>
+            <label style="font-size:10px; color:#555;">MY ID</label>
+            <div id="my-id" style="font-family:monospace; color:var(--primary); font-size:24px; padding:15px; background:#000; border-radius:12px; text-align:center;">---</div>
+            <button class="btn" style="width:100%; margin-top:20px; background:transparent; border:1px solid #333;" onclick="location.reload()">LOG OUT</button>
         </div>
     </div>
 
@@ -68,8 +64,8 @@
         <div id="chat-interface" style="display:flex; flex-direction:column; height:100%;">
             <div id="message-stream"></div>
             <div style="padding:30px; background:var(--sidebar); display:flex; gap:15px; border-top:1px solid #222;">
-                <input type="text" id="msg-in" placeholder="Transmit data...">
-                <button class="btn" style="width: 100px;" onclick="send()">SEND</button>
+                <input type="text" id="msg-in" placeholder="Message...">
+                <button class="btn" onclick="send()">SEND</button>
             </div>
         </div>
 
@@ -91,10 +87,10 @@
         const toast = d.createElement('div');
         toast.className = 'toast';
         if (isCall) {
-            toast.innerHTML = `<strong>Incoming Call</strong><br>Node ${callObj.peer}
-                <div style="margin-top:10px; display:flex; gap:10px;">
-                    <button class="btn" style="padding:8px 15px; font-size:12px; background:var(--success)" onclick="acceptCall()">Accept</button>
-                    <button class="btn" style="padding:8px 15px; font-size:12px; background:var(--danger)" onclick="this.parentElement.remove()">Ignore</button>
+            toast.innerHTML = `<strong>Incoming Request</strong><br>Node ${callObj.peer} wants to video call.
+                <div style="margin-top:15px; display:flex; gap:10px;">
+                    <button class="btn" style="padding:10px; flex:1; background:var(--success)" onclick="acceptCall()">Accept</button>
+                    <button class="btn" style="padding:10px; flex:1; background:var(--danger)" onclick="this.parentElement.parentElement.remove()">Decline</button>
                 </div>`;
             window.pendingCall = callObj;
         } else {
@@ -111,8 +107,14 @@
         
         myPeer = new Peer(Math.random().toString(36).substr(2, 6).toUpperCase());
         myPeer.on('open', id => d.getElementById('my-id').innerText = id);
+        
+        // IMPORTANT: Listen for incoming calls
+        myPeer.on('call', call => {
+            console.log("Incoming call detected...");
+            sysNotify(call.peer, true, call);
+        });
+
         myPeer.on('connection', c => setupData(c));
-        myPeer.on('call', call => sysNotify(call.peer, true, call));
     }
 
     function connect() {
@@ -124,14 +126,9 @@
         activeConn = c;
         c.on('open', () => {
             d.getElementById('call-btn').style.display = 'block';
-            sysNotify("Secure Link Established");
+            sysNotify("Linked to Peer");
         });
-        c.on('data', data => {
-            // Correctly parse the object from the stream
-            const name = data.name || "Remote";
-            const text = data.text || "No data received";
-            post(name, text);
-        });
+        c.on('data', data => post(data.name || "Remote", data.text || data));
     }
 
     async function acceptCall() {
@@ -144,10 +141,12 @@
     }
 
     async function requestCall() {
-        sysNotify("Requesting Media Access...");
+        if(!activeConn) return;
+        sysNotify("Initializing Media...");
         toggleMode('video');
         localStream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
         d.getElementById('local-video').srcObject = localStream;
+        
         const call = myPeer.call(activeConn.peer, localStream);
         bindStream(call);
     }
@@ -173,7 +172,7 @@
         const s = d.getElementById('message-stream');
         const b = d.createElement('div');
         b.className = `bubble ${n===user ? 'me' : ''}`;
-        b.innerHTML = `<div class="tag">${n}</div><div>${t}</div>`;
+        b.innerHTML = `<small style="opacity:0.5;">${n}</small><br>${t}`;
         s.appendChild(b);
         s.scrollTop = s.scrollHeight;
     }
