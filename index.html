@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>CodeChat | v4.9 Apex Ultra</title>
+    <title>CodeChat | v5.1 Sentinel</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
     <style>
@@ -15,54 +15,50 @@
         #nav-bar { background: var(--sidebar); border-right: 1px solid #27272a; padding: 30px; display: flex; flex-direction: column; }
         #chat-stage { display: flex; flex-direction: column; height: 100vh; background: var(--bg); position: relative; }
 
-        /* --- Chat Stream --- */
-        #message-stream { flex: 1; overflow-y: auto; padding: 40px; display: flex; flex-direction: column; gap: 12px; scroll-behavior: smooth; }
-        #message-stream::-webkit-scrollbar { width: 5px; }
-        #message-stream::-webkit-scrollbar-thumb { background: #27272a; border-radius: 10px; }
+        /* --- Chat Header --- */
+        #chat-header { padding: 20px 40px; background: rgba(15,15,18,0.5); border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; }
+        .tunnel-info { font-size: 12px; font-weight: 800; color: #555; display: flex; align-items: center; gap: 8px; }
+        .active-dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; box-shadow: 0 0 10px var(--success); }
 
+        #message-stream { flex: 1; overflow-y: auto; padding: 40px; display: flex; flex-direction: column; gap: 12px; scroll-behavior: smooth; }
         .bubble { padding: 14px 20px; border-radius: 18px; background: var(--panel); border: 1px solid #222; max-width: 75%; width: fit-content; }
         .bubble.me { align-self: flex-end; background: var(--primary); color: white; border: none; }
         .tag { font-size: 10px; font-weight: 800; opacity: 0.5; margin-bottom: 4px; text-transform: uppercase; }
 
-        /* --- Buttons & Inputs --- */
+        /* --- Admin Modal --- */
+        #admin-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(25px); }
+        .admin-box { background: var(--sidebar); border: 1px solid #27272a; width: 920px; height: 660px; display: grid; grid-template-columns: 300px 1fr; border-radius: 35px; overflow: hidden; }
+        .aside, .main { padding: 35px; }
+        .node-item { padding: 12px; background: #000; border: 1px solid #222; border-radius: 12px; margin-bottom: 8px; font-size: 11px; display: flex; justify-content: space-between; align-items: center; }
+
+        /* --- Components --- */
         input { background: #0b0b0d; border: 1px solid #27272a; border-radius: 14px; padding: 16px; color: #fff; outline: none; width: 100%; font-size: 14px; }
         .btn { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 14px; font-weight: 700; cursor: pointer; text-align: center; }
         .btn-danger { background: var(--danger); }
-        .btn-logout { background: transparent; border: 1px solid #333; color: #555; font-size: 12px; margin-top: 20px; text-transform: uppercase; letter-spacing: 1px; }
-        .btn-logout:hover { border-color: var(--danger); color: var(--danger); }
-
-        /* --- Status Components --- */
-        #alert-strip { display: none; position: fixed; top: 0; left: 0; width: 100%; background: var(--danger); padding: 12px; text-align: center; z-index: 9999; font-weight: 900; }
+        .btn-logout { background: transparent; border: 1px solid #333; color: #555; font-size: 12px; margin-top: 20px; font-weight: 800; }
+        
+        #alert-strip { display: none; position: fixed; top: 0; left: 0; width: 100%; background: var(--danger); padding: 15px; text-align: center; z-index: 9999; font-weight: 900; }
         .status-pill { display: none; align-items: center; padding: 5px 12px; border-radius: 100px; font-size: 10px; font-weight: 800; background: rgba(34, 197, 94, 0.1); color: var(--success); border: 1px solid rgba(34, 197, 94, 0.2); }
-        .entry-link { display: block; margin-top: 20px; font-size: 12px; color: #555; text-decoration: none; cursor: pointer; }
-        .entry-link:hover { color: var(--primary); }
-
-        /* --- Admin --- */
-        #admin-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(25px); }
-        .admin-box { background: var(--sidebar); border: 1px solid #27272a; width: 900px; height: 640px; display: grid; grid-template-columns: 280px 1fr; border-radius: 35px; overflow: hidden; }
-        .aside, .main { padding: 35px; }
     </style>
 </head>
 <body>
 
 <canvas id="fx-canvas" style="position:fixed; inset:0; pointer-events:none; z-index:9000;"></canvas>
-<div id="alert-strip">⚠️ SYSTEM: <span id="alert-msg"></span></div>
+<div id="alert-strip">GLOBAL BROADCAST: <span id="alert-msg"></span></div>
 
 <div id="admin-modal">
     <div class="admin-box">
         <div class="aside">
-            <h2 style="margin:0 0 5px;">Root Console</h2>
-            <div id="node-list" style="overflow-y:auto; flex:1; margin-top:20px;"></div>
-            <button class="btn" style="background:#222; margin-top:20px; width:100%;" onclick="toggleAdmin(false)">Close Console</button>
+            <h2>Fleet Control</h2>
+            <div id="node-list-container" style="flex:1; overflow-y:auto; margin-top:20px;"></div>
+            <button class="btn" style="background:#222; margin-top:20px;" onclick="toggleAdmin(false)">Close Console</button>
         </div>
         <div class="main" style="display:flex; flex-direction:column;">
-            <div id="log-window" style="flex:1; background:#000; border:1px solid #222; border-radius:16px; font-family:monospace; padding:20px; overflow-y:auto; color:#71717a; margin-bottom:20px;"></div>
-            <input type="text" id="bc-field" placeholder="Admin message..." style="margin-bottom:12px;">
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-                <button class="btn btn-danger" onclick="runCmd('bc')" style="grid-column: span 2;">📢 Broadcast with Alert</button>
-                <button class="btn" onclick="runCmd('rain')" style="background:#fbbf24; color:#000;">💰 Rain FX</button>
-                <button class="btn" onclick="runCmd('matrix')" style="background:#a855f7;">🧪 Matrix FX</button>
-                <button class="btn btn-danger" onclick="runCmd('kill')">💀 Kill All</button>
+            <div id="log-window" style="flex:1; background:#000; border:1px solid #222; border-radius:16px; font-family:monospace; padding:20px; overflow-y:auto; color:#444; margin-bottom:20px; font-size:11px;"></div>
+            <input type="text" id="bc-field" placeholder="Broadcasting text...">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:10px;">
+                <button class="btn btn-danger" onclick="runCmd('bc')" style="grid-column: span 2;">📢 10s Broadcast</button>
+                <button class="btn" onclick="runCmd('kill')">💀 Kill All Nodes</button>
             </div>
         </div>
     </div>
@@ -71,11 +67,10 @@
 <div id="entry-gate" style="position:fixed; inset:0; background:var(--bg); z-index:10001; display:flex; align-items:center; justify-content:center;">
     <div style="width:360px; text-align:center; background:var(--panel); padding:50px; border-radius:40px; border:1px solid #222;">
         <h1 style="margin-bottom:8px; font-weight:900;">CodeChat</h1>
-        <p style="font-size:12px; color:#555; margin-bottom:35px;">Secure Mesh Networking</p>
+        <p style="font-size:12px; color:#555; margin-bottom:35px;">Secure Mesh v5.1</p>
         <input type="text" id="u-name" placeholder="Username" style="margin-bottom:12px;">
         <input type="password" id="u-pass" placeholder="Password" style="margin-bottom:12px;">
-        <button class="btn" style="width:100%; margin-top:25px;" onclick="init()">Log In</button>
-        <a class="entry-link" onclick="alert('Account creation currently disabled. Contact system admin.')">Create Account</a>
+        <button class="btn" id="login-btn" style="width:100%; margin-top:25px;" onclick="init()">Log In</button>
     </div>
 </div>
 
@@ -84,19 +79,25 @@
         <h2 style="font-weight:900; margin:0 0 30px;">CodeChat</h2>
         <button class="btn btn-danger" id="adm-btn" style="display:none; margin-bottom:30px;" onclick="toggleAdmin(true)">ROOT CONSOLE</button>
         
-        <label style="font-size:10px; color:#555; font-weight:800;">LINK REMOTE NODE</label>
-        <input type="text" id="target-id" placeholder="Enter ID..." style="margin:10px 0;">
-        <button class="btn" onclick="connect()">Connect to Node</button>
+        <label style="font-size:10px; color:#555; font-weight:800;">REMOTE LINK</label>
+        <input type="text" id="target-id" placeholder="Node Peer ID..." style="margin:10px 0;">
+        <button class="btn" id="conn-btn" onclick="connect()">Connect to Node</button>
 
         <div style="margin-top:auto;">
             <div id="sys-status" class="status-pill">● SYSTEM: ONLINE</div>
             <div style="height:20px;"></div>
             <label style="font-size:10px; color:#555;">MY NODE ID</label>
-            <div id="my-id" style="font-family:'JetBrains Mono'; color:var(--primary); font-weight:800; font-size:24px; background:#000; padding:18px; border-radius:16px; border:1px solid #222; text-align:center;">---</div>
-            <button class="btn btn-logout" onclick="logout()">LOG OUT</button>
+            <div id="my-id" style="font-family:monospace; color:var(--primary); font-weight:800; font-size:26px; background:#000; padding:18px; border-radius:16px; border:1px solid #222; text-align:center; margin-top:10px;">---</div>
+            <button class="btn btn-logout" style="width:100%;" onclick="logout()">LOG OUT</button>
         </div>
     </div>
     <div id="chat-stage">
+        <div id="chat-header">
+            <div class="tunnel-info" id="current-chat">
+                NOT CONNECTED
+            </div>
+            <div class="status-pill" id="header-status" style="display:inline-flex;">IDLE</div>
+        </div>
         <div id="message-stream"></div>
         <div style="padding:35px; background:rgba(15,15,18,0.95); display:flex; gap:15px; border-top:1px solid #222;">
             <input type="text" id="msg-in" placeholder="Type a message...">
@@ -110,11 +111,11 @@
     let user="", isAdmin=false, myPeer, conns = {};
 
     const audio = new (window.AudioContext || window.webkitAudioContext)();
-    function sfx(f) {
+    function sfx(freq, type='square', vol=0.05) {
         const o=audio.createOscillator(), g=audio.createGain();
         o.connect(g); g.connect(audio.destination);
-        o.type='square'; o.frequency.setValueAtTime(f, audio.currentTime);
-        g.gain.setValueAtTime(0.05, audio.currentTime);
+        o.type=type; o.frequency.setValueAtTime(freq, audio.currentTime);
+        g.gain.setValueAtTime(vol, audio.currentTime);
         g.gain.exponentialRampToValueAtTime(0.01, audio.currentTime+0.5);
         o.start(); o.stop(audio.currentTime+0.5);
     }
@@ -129,31 +130,68 @@
         myPeer = new Peer(Math.random().toString(36).substr(2, 6).toUpperCase());
         myPeer.on('open', id => d.getElementById('my-id').innerText = id);
         myPeer.on('connection', c => bind(c));
+        myPeer.on('error', err => {
+            if(err.type === 'peer-dotnet-exist' || err.type === 'peer-unavailable') {
+                showError();
+            }
+        });
+    }
+
+    function showError() {
+        const btn = d.getElementById('conn-btn');
+        const oldTxt = btn.innerText;
+        btn.innerText = "ERROR: NODE NOT FOUND";
+        btn.style.background = "var(--danger)";
+        sfx(150, 'sawtooth', 0.1);
+        setTimeout(() => { btn.innerText = oldTxt; btn.style.background = "var(--primary)"; }, 3000);
     }
 
     function logout() { if(myPeer) myPeer.destroy(); location.reload(); }
-    function connect() { bind(myPeer.connect(d.getElementById('target-id').value.toUpperCase())); }
+    
+    function connect() { 
+        const tid = d.getElementById('target-id').value.toUpperCase();
+        if(!tid) return;
+        const c = myPeer.connect(tid);
+        bind(c);
+        
+        // Timeout for non-existent nodes
+        setTimeout(() => {
+            if(!conns[tid]) showError();
+        }, 5000);
+    }
 
     function bind(c) {
         c.on('open', () => {
-            conns[c.peer] = { conn: c, name: "Node" };
+            conns[c.peer] = { conn: c, name: "Remote Node" };
             c.send({type:'SYNC', name:user});
             d.getElementById('sys-status').style.display = 'inline-flex';
-            if(isAdmin) log(`Handshake: ${c.peer}`, "#3b82f6");
+            updateTunnelUI(c.peer, "Connecting...");
             updateAdmin();
         });
         c.on('data', data => {
-            if(data.type==='SYNC') { conns[c.peer].name = data.name; updateAdmin(); }
+            if(data.type==='SYNC') { 
+                conns[c.peer].name = data.name; 
+                updateTunnelUI(c.peer, data.name);
+                updateAdmin();
+                sfx(880, 'sine');
+            }
             if(data.type==='MSG') post(data.name, data.text);
-            if(data.type==='BC') { showAlert(data.val); sfx(400); }
-            if(data.type==='FX') { fx(data.mode); sfx(600); }
+            if(data.type==='BC') showAlert(data.val);
             if(data.type==='KILL') logout();
         });
         c.on('close', () => { 
             delete conns[c.peer]; 
-            if(Object.keys(conns).length === 0) d.getElementById('sys-status').style.display = 'none';
+            if(Object.keys(conns).length === 0) {
+                d.getElementById('sys-status').style.display = 'none';
+                d.getElementById('current-chat').innerText = "NOT CONNECTED";
+            }
             updateAdmin(); 
         });
+    }
+
+    function updateTunnelUI(id, name) {
+        d.getElementById('current-chat').innerHTML = `<div class="active-dot"></div> CURRENT CHAT: <span style="color:#fff">${name}</span> (${id})`;
+        d.getElementById('header-status').innerText = "ONLINE";
     }
 
     function post(n, t) {
@@ -171,19 +209,15 @@
         post(user, i.value); i.value="";
     }
 
-    function log(m, c="#71717a") {
-        const w = d.getElementById('log-window'); if(!w) return;
-        w.innerHTML += `<div style="margin-bottom:6px; color:${c}">[${new Date().toLocaleTimeString()}] ${m}</div>`;
-        w.scrollTop = w.scrollHeight;
-    }
-
     function updateAdmin() {
         if(!isAdmin) return;
-        const list = d.getElementById('node-list');
+        const list = d.getElementById('node-list-container');
         list.innerHTML = "";
         Object.keys(conns).forEach(id => {
-            list.innerHTML += `<div style="padding:10px; background:#000; margin-bottom:8px; border-radius:12px; font-size:11px; display:flex; justify-content:space-between; border:1px solid #222;">
-                <span>${conns[id].name}</span> <span onclick="runCmd('kill','${id}')" style="color:var(--danger); cursor:pointer;">KICK</span></div>`;
+            list.innerHTML += `<div class="node-item">
+                <span><b>${conns[id].name}</b> (${id})</span> 
+                <span onclick="runCmd('kill','${id}')" style="color:var(--danger); cursor:pointer;">KICK</span>
+            </div>`;
         });
     }
 
@@ -191,36 +225,20 @@
         const val = d.getElementById('bc-field').value;
         const targets = targetId ? [targetId] : Object.keys(conns);
         targets.forEach(id => {
-            const c = conns[id].conn;
-            if(type==='bc') c.send({type:'BC', val});
-            if(type==='rain' || type==='matrix') c.send({type:'FX', mode:type});
-            if(type==='kill') c.send({type:'KILL'});
+            conns[id].conn.send({type: (type==='bc'?'BC':'KILL'), val});
         });
-        if(!targetId) {
-            if(type==='bc') { showAlert(val); sfx(400); }
-            if(type==='rain' || type==='matrix') fx(type);
-            log(`GLOBAL ${type.toUpperCase()}`, "#fbbf24");
-        }
+        if(!targetId && type==='bc') { showAlert(val); sfx(200); }
     }
 
-    function toggleAdmin(s) { d.getElementById('admin-modal').style.display = s ? 'flex' : 'none'; }
-    function showAlert(v) { d.getElementById('alert-msg').innerText = v; d.getElementById('alert-strip').style.display='block'; setTimeout(()=>d.getElementById('alert-strip').style.display='none', 8000); }
+    function toggleAdmin(s) { d.getElementById('admin-modal').style.display = s ? 'flex' : 'none'; updateAdmin(); }
     
-    function fx(m) {
-        const cv = d.getElementById('fx-canvas'), cx = cv.getContext('2d');
-        cv.width = window.innerWidth; cv.height = window.innerHeight;
-        let p = []; for(let i=0; i<80; i++) p.push({x:Math.random()*cv.width, y:-50, s:Math.random()*7+5});
-        function draw() {
-            cx.clearRect(0,0,cv.width,cv.height);
-            let a = false;
-            p.forEach(it => {
-                it.y += it.s; if(it.y < cv.height) a = true;
-                cx.fillStyle = (m==='rain'?'#fbbf24':'#22c55e');
-                cx.fillText(m==='rain'?'$':String.fromCharCode(0x30A0+Math.random()*96), it.x, it.y);
-            });
-            if(a) requestAnimationFrame(draw);
-        } draw();
+    function showAlert(v) { 
+        d.getElementById('alert-msg').innerText = v; 
+        d.getElementById('alert-strip').style.display='block'; 
+        sfx(440, 'square', 0.1);
+        setTimeout(()=>d.getElementById('alert-strip').style.display='none', 10000); 
     }
+    
     d.getElementById('msg-in').onkeydown = e => { if(e.key==='Enter') send(); };
 </script>
 </body>
