@@ -11,96 +11,93 @@
         
         body, html { margin: 0; padding: 0; height: 100vh; background: var(--bg); font-family: 'Inter', sans-serif; color: #fff; overflow: hidden; }
 
-        /* Dedicated Admin Bar */
+        /* Admin Slide Panel */
+        #admin-drawer { 
+            position: fixed; top: 0; left: -320px; width: 300px; height: 100vh; 
+            background: #0d0d0d; border-right: 2px solid var(--red); z-index: 3000; 
+            transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); padding: 25px; box-shadow: 20px 0 50px rgba(0,0,0,0.8);
+        }
+        #admin-drawer.open { left: 0; }
+        .drawer-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2500; }
+
+        /* Admin Bar */
         #admin-broadcast { 
             display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-            background: linear-gradient(90deg, var(--red), #991b1b); padding: 10px 30px; 
-            border-radius: 50px; z-index: 2000; box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
-            font-weight: 800; letter-spacing: 1px; animation: pulse 1.5s infinite;
+            background: linear-gradient(90deg, var(--red), #991b1b); padding: 12px 35px; 
+            border-radius: 50px; z-index: 2000; font-weight: 800; animation: pulse 1.5s infinite;
         }
-        @keyframes pulse { 0% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.05); } 100% { transform: translateX(-50%) scale(1); } }
 
         /* Layout */
         #container { display: grid; grid-template-columns: 280px 1fr; height: 100vh; display: none; }
-        
-        #sidebar { 
-            background: var(--panel); border-right: 1px solid rgba(255,255,255,0.1); 
-            padding: 20px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto;
-        }
+        #sidebar { background: var(--panel); border-right: 1px solid rgba(255,255,255,0.1); padding: 20px; display: flex; flex-direction: column; gap: 20px; }
 
-        /* Admin Dedicated Section */
-        #admin-panel { 
-            background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3);
-            border-radius: 12px; padding: 15px; display: none;
-        }
-        .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-
-        /* Chat Arena */
+        /* Chat Fix */
         #chat-arena { display: flex; flex-direction: column; height: 100vh; position: relative; }
+        #logs { flex: 1; overflow-y: auto; padding: 25px; display: flex; flex-direction: column; gap: 12px; }
+        .msg { padding: 14px 20px; border-radius: 8px; background: var(--glass); border-left: 4px solid var(--accent); }
+        .sender { font-size: 11px; font-weight: 800; color: var(--accent); margin-bottom: 4px; text-transform: uppercase; }
+
+        #footer { padding: 20px; background: var(--panel); border-top: 1px solid rgba(255,255,255,0.1); display: flex; gap: 12px; }
+        input { background: #111; border: 1px solid #222; border-radius: 8px; padding: 12px; color: #fff; outline: none; width: 100%; }
+        .btn { background: var(--accent); color: #fff; border: none; padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer; }
         
-        /* THE SCROLL FIX */
-        #logs { 
-            flex: 1; overflow-y: scroll; 
-            padding: 20px; display: flex; flex-direction: column; gap: 10px;
-            background: radial-gradient(circle at top right, #0a0a0a, #050505);
-        }
-        #logs::-webkit-scrollbar { width: 6px; }
-        #logs::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
-
-        .msg { padding: 12px 20px; border-radius: 4px; border-left: 4px solid var(--accent); background: var(--glass); }
-        .sender { font-size: 10px; font-weight: 800; color: var(--accent); margin-bottom: 5px; opacity: 0.8; }
-
-        #footer { padding: 20px; background: var(--panel); border-top: 1px solid rgba(255,255,255,0.1); display: flex; gap: 10px; }
-        input { background: #111; border: 1px solid #222; border-radius: 6px; padding: 12px; color: #fff; outline: none; width: 100%; }
-        .btn { background: var(--accent); color: #fff; border: none; padding: 10px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+        #fx-canvas { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 1500; width: 100vw; height: 100vh; }
+        .glitch { animation: glitch 0.15s infinite; }
+        @keyframes glitch { 0% { filter: hue-rotate(90deg); transform: translate(1px, 1px); } 100% { filter: none; transform: translate(0); } }
         
-        #fx-canvas { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 1500; }
-
-        .glitch { animation: glitch 0.2s infinite; }
-        @keyframes glitch { 0% { transform: translate(2px, 2px); } 50% { transform: translate(-2px, -2px); } 100% { transform: translate(0); } }
+        .admin-only { display: none; margin-top: 10px; background: var(--red); color: #000; width: 100%; }
     </style>
 </head>
 <body>
 
 <canvas id="fx-canvas"></canvas>
-<div id="admin-broadcast">ADMIN: <span id="bc-msg"></span></div>
+<div id="admin-broadcast">📢 <span id="bc-msg"></span></div>
+<div class="drawer-overlay" id="overlay" onclick="toggleDrawer()"></div>
+
+<div id="admin-drawer">
+    <h2 style="color:var(--red); margin:0 0 20px;">COMMAND CENTER</h2>
+    <label style="font-size:10px; color:#555;">GLOBAL ANNOUNCEMENT</label>
+    <input type="text" id="bc-in" placeholder="Message..." style="margin:10px 0;">
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+        <button class="btn" style="background:var(--red)" onclick="cmd('bc')">Broadcast</button>
+        <button class="btn" style="background:#222" onclick="cmd('clear_bc')">End Alert</button>
+        <button class="btn" style="background:var(--gold); color:#000" onclick="cmd('rain')">Coin Rain</button>
+        <button class="btn" style="background:purple" onclick="cmd('glitch')">Glitch FX</button>
+        <button class="btn" style="background:#fff; color:#000" id="freeze-btn" onclick="cmd('freeze')">Freeze Chat</button>
+        <button class="btn" style="background:#555" onclick="cmd('wipe')">Wipe Logs</button>
+        <button class="btn" style="background:var(--red); grid-column: span 2;" onclick="cmd('kick')">KICK REMOTE USER</button>
+    </div>
+    <div style="margin-top:30px;">
+        <label style="font-size:10px; color:#555;">STATUS LOG</label>
+        <div id="status-log" style="font-size:11px; color:#888; margin-top:10px; height:150px; overflow-y:auto; font-family:monospace;"></div>
+    </div>
+</div>
 
 <div id="auth-screen" style="position:fixed; inset:0; background:#000; z-index:5000; display:flex; align-items:center; justify-content:center;">
-    <div style="background:#0a0a0a; padding:40px; border-radius:15px; border:1px solid #222; width:300px;">
-        <h1 style="margin-top:0;">CodeChat Login</h1>
+    <div style="background:#0a0a0a; padding:40px; border-radius:20px; border:1px solid #222; width:320px; text-align:center;">
+        <h1 style="margin-bottom:20px;">CodeChat</h1>
         <input type="text" id="l-user" placeholder="Username" style="margin-bottom:10px;">
         <input type="password" id="l-pass" placeholder="Password" style="margin-bottom:20px;">
-        <button class="btn" onclick="auth()" style="width:100%;">Connect</button>
+        <button class="btn" onclick="auth()" style="width:100%;">Establish Link</button>
     </div>
 </div>
 
 <div id="container">
     <div id="sidebar">
-        <h2 style="margin:0; font-weight:800; font-size:24px;">Code<span style="color:var(--accent)">Chat</span></h2>
+        <h2 style="margin:0; font-weight:800; font-size:22px;">Code<span style="color:var(--accent)">Chat</span></h2>
         
-        <div id="admin-panel">
-            <label style="color:var(--red); font-weight:800; font-size:10px;">COMMAND CENTER</label>
-            <input type="text" id="bc-in" placeholder="Announcement..." style="font-size:11px; margin: 10px 0;">
-            <div class="admin-grid">
-                <button class="btn" style="background:var(--red)" onclick="cmd('bc')">Broadcast</button>
-                <button class="btn" style="background:#333" onclick="cmd('clear_bc')">End Alert</button>
-                <button class="btn" style="background:var(--gold); color:#000" onclick="cmd('rain')">Coin Rain</button>
-                <button class="btn" style="background:purple" onclick="cmd('glitch')">Glitch FX</button>
-                <button class="btn" style="background:#555" onclick="cmd('wipe')">Wipe Logs</button>
-                <button class="btn" style="background:var(--red)" onclick="cmd('kick')">Kick User</button>
-            </div>
-        </div>
+        <button class="btn admin-only" id="admin-toggle-btn" onclick="toggleDrawer()">OPEN ADMIN PANEL</button>
 
         <div>
-            <label>ROOM CONNECTION</label>
+            <label style="font-size:10px; color:#555;">CONNECTION</label>
             <input type="text" id="peer-join" placeholder="Target 8-Digit ID" style="margin-top:10px;">
-            <button class="btn" onclick="connect()" style="width:100%; margin-top:5px;">Join Room</button>
+            <button class="btn" onclick="connect()" style="width:100%; margin-top:8px;">Connect to Node</button>
         </div>
 
         <div style="margin-top:auto;">
-            <label>YOUR NODE ID</label>
-            <div id="id-box" style="color:var(--accent); font-weight:800; font-size:18px; margin:5px 0;">--------</div>
-            <button class="btn" style="background:transparent; border:1px solid #333; font-size:11px;" onclick="location.reload()">LOGOUT</button>
+            <label style="font-size:10px; color:#555;">YOUR NODE ID</label>
+            <div id="id-box" style="color:var(--accent); font-weight:800; font-size:18px; margin:8px 0; font-family:monospace;">--------</div>
+            <button class="btn" style="background:transparent; border:1px solid #333; font-size:11px; color:#555;" onclick="location.reload()">LOGOUT</button>
         </div>
     </div>
 
@@ -108,14 +105,14 @@
         <div id="logs"></div>
         <div id="footer">
             <input type="text" id="msg-in" placeholder="Type a message..." autocomplete="off">
-            <button class="btn" onclick="send()" style="width:120px;">SEND</button>
+            <button class="btn" id="send-btn" onclick="send()" style="width:120px;">SEND</button>
         </div>
     </div>
 </div>
 
 <script>
     const d=document;
-    let user="", isAdmin=false, peer, conn;
+    let user="", isAdmin=false, peer, conn, chatFrozen=false;
     const aKey = "AdminBingkahu2014!";
 
     function auth() {
@@ -123,10 +120,26 @@
         const p = d.getElementById('l-pass').value;
         if(!u || !p) return;
         user = u;
-        if(p === aKey) { isAdmin=true; d.getElementById('admin-panel').style.display='block'; }
+        if(p === aKey) { 
+            isAdmin=true; 
+            d.getElementById('admin-toggle-btn').style.display='block'; 
+        }
         d.getElementById('auth-screen').style.display='none';
         d.getElementById('container').style.display='grid';
         init();
+    }
+
+    function toggleDrawer() {
+        const drawer = d.getElementById('admin-drawer');
+        const overlay = d.getElementById('overlay');
+        drawer.classList.toggle('open');
+        overlay.style.display = drawer.classList.contains('open') ? 'block' : 'none';
+    }
+
+    function logStatus(txt) {
+        const s = d.getElementById('status-log');
+        s.innerHTML += `<div>[${new Date().toLocaleTimeString()}] ${txt}</div>`;
+        s.scrollTop = s.scrollHeight;
     }
 
     function init() {
@@ -137,32 +150,48 @@
     }
 
     function connect() {
-        const target = d.getElementById('peer-join').value.toUpperCase();
-        if(!target) return;
-        conn = peer.connect(target);
+        conn = peer.connect(d.getElementById('peer-join').value.toUpperCase());
         setup();
     }
 
     function setup() {
+        conn.on('open', () => { logStatus("Peer Connected"); add("System", "Linked."); });
         conn.on('data', data => {
-            if(data.type === 'BC') { d.getElementById('admin-broadcast').style.display='block'; d.getElementById('bc-msg').innerText=data.val; }
-            if(data.type === 'CLR_BC') { d.getElementById('admin-broadcast').style.display='none'; }
+            if(data.type === 'BC') showBC(data.val);
+            if(data.type === 'CLR_BC') d.getElementById('admin-broadcast').style.display='none';
             if(data.type === 'WIPE') d.getElementById('logs').innerHTML = "";
             if(data.type === 'RAIN') startCoinRain();
             if(data.type === 'GLITCH') { d.body.classList.add('glitch'); setTimeout(()=>d.body.classList.remove('glitch'), 3000); }
             if(data.type === 'KICK') location.reload();
+            if(data.type === 'FREEZE') setFreeze(data.val);
             if(data.text) add(data.name, data.text);
         });
     }
 
+    function setFreeze(val) {
+        chatFrozen = val;
+        d.getElementById('msg-in').disabled = val;
+        d.getElementById('send-btn').disabled = val;
+        d.getElementById('msg-in').placeholder = val ? "ADMIN HAS FROZEN CHAT" : "Type a message...";
+    }
+
+    function showBC(val) {
+        const bar = d.getElementById('admin-broadcast');
+        d.getElementById('bc-msg').innerText = val;
+        bar.style.display = 'block';
+        setTimeout(() => { bar.style.display = 'none'; }, 10000);
+    }
+
     function cmd(type) {
         if(!isAdmin || !conn) return;
-        if(type==='bc') { const v=d.getElementById('bc-in').value; conn.send({type:'BC', val:v}); d.getElementById('admin-broadcast').style.display='block'; d.getElementById('bc-msg').innerText=v; }
+        if(type==='bc') { const v=d.getElementById('bc-in').value; conn.send({type:'BC', val:v}); showBC(v); }
         if(type==='clear_bc') { conn.send({type:'CLR_BC'}); d.getElementById('admin-broadcast').style.display='none'; }
         if(type==='wipe') { conn.send({type:'WIPE'}); d.getElementById('logs').innerHTML=""; }
         if(type==='rain') { conn.send({type:'RAIN'}); startCoinRain(); }
         if(type==='glitch') { conn.send({type:'GLITCH'}); d.body.classList.add('glitch'); setTimeout(()=>d.body.classList.remove('glitch'), 2000); }
+        if(type==='freeze') { chatFrozen = !chatFrozen; conn.send({type:'FREEZE', val:chatFrozen}); setFreeze(chatFrozen); d.getElementById('freeze-btn').innerText = chatFrozen ? "Unfreeze" : "Freeze Chat"; }
         if(type==='kick') conn.send({type:'KICK'});
+        logStatus(`Ran CMD: ${type}`);
     }
 
     function add(n, t) {
@@ -176,32 +205,33 @@
 
     function send() {
         const i = d.getElementById('msg-in');
-        if(!i.value || !conn) return;
+        if(!i.value || !conn || chatFrozen) return;
         conn.send({name: user, text: i.value});
         add(user, i.value);
         i.value = "";
     }
 
+    // Effect logic (Coin Rain)
     const canvas = d.getElementById('fx-canvas');
     const ctx = canvas.getContext('2d');
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     let particles = [];
-
     function startCoinRain() {
         particles = [];
-        for(let i=0; i<60; i++) particles.push({x: Math.random()*canvas.width, y: -20, s: Math.random()*5+3, color: '#fbbf24'});
+        for(let i=0; i<70; i++) particles.push({x:Math.random()*canvas.width, y:-Math.random()*500, s:Math.random()*4+4, color:'#fbbf24', r:6});
         animateFx();
     }
-
     function animateFx() {
         ctx.clearRect(0,0,canvas.width, canvas.height);
-        particles.forEach((p) => {
+        let active = false;
+        particles.forEach(p => {
             p.y += p.s;
+            if(p.y < canvas.height+50) active = true;
             ctx.fillStyle = p.color;
-            ctx.beginPath(); ctx.arc(p.x, p.y, 6, 0, 7); ctx.fill();
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill();
         });
-        if(particles.length > 0 && particles[0].y < canvas.height + 50) requestAnimationFrame(animateFx);
+        if(active) requestAnimationFrame(animateFx);
     }
 
     d.getElementById('msg-in').onkeypress = (e) => { if(e.key==='Enter') send(); };
