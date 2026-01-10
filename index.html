@@ -123,7 +123,7 @@
 
 <div id="container">
     <div id="sidebar">
-        <h1>Github comms</h1>
+        <h1>CodeChat</h1>
         
         <div style="background:var(--glass); padding:12px; border-radius:8px;">
             <label>Current User</label>
@@ -141,7 +141,7 @@
 
         <div>
             <label>Chat Link</label>
-            <input type="text" id="peer-join" placeholder="Target 8-Digit ID" style="width:100%; margin-top:8px;">
+            <input type="text" id="peer-join" placeholder="Join 8-Digit Room ID" style="width:100%; margin-top:8px;">
             <button class="btn" onclick="connectPeer()" style="width:100%; margin-top:10px;">Link Nodes</button>
         </div>
 
@@ -155,7 +155,7 @@
     <div id="chat-arena">
         <div id="logs"></div>
         <div id="footer">
-            <input type="text" id="msg-in" placeholder="Transmit data..." style="flex:1;" autocomplete="off">
+            <input type="text" id="msg-in" placeholder="Send Message" style="flex:1;" autocomplete="off">
             <button class="btn" style="padding: 0 30px;" onclick="sendMsg()">Send</button>
         </div>
     </div>
@@ -206,7 +206,7 @@
     };
 
     function setup() {
-        conn.on('open', () => add("System", "Dimensional Link Established.", "recv"));
+        conn.on('open', () => add("System", "Link Established.", "recv"));
         conn.on('data', data => {
             if(data.type === 'BC') {
                 d.getElementById('broadcast-bar').style.display = 'block';
