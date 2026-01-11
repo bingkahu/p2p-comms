@@ -1,46 +1,56 @@
-🛰️ CodeChat Sentinel v5.1
-Enterprise-Grade Peer-to-Peer Communication Protocol
-CodeChat Sentinel is a sophisticated, browser-based messaging framework designed for secure, direct communication. By leveraging a decentralized mesh architecture, it eliminates the need for intermediary servers, ensuring that data transmission remains strictly between authorized nodes.
+# CodeChat (p2p-comms)
 
-🛡️ Protocol Security & Legal
-Data Sovereignty
-CodeChat operates on a Zero-Persistence model. No message data, metadata, or session logs are stored on external servers. All communication exists solely within the temporary memory (RAM) of the active browser session and is purged upon termination.
+CodeChat is a high-performance, serverless peer-to-peer (P2P) communication platform. By leveraging WebRTC via the PeerJS library, it facilitates direct data exchange between browser nodes, eliminating the need for intermediary servers or centralized databases to handle message traffic.
 
-Privacy Disclosure
-Direct Peer-to-Peer (P2P) connections facilitate the exchange of data packets directly between users. While this provides significant privacy advantages, it necessitates the visibility of public IP addresses between connected nodes. Users requiring complete IP anonymity are advised to operate within a Virtual Private Network (VPN).
+## Core Functionality
 
-Terms of Operation
-This software is provided "as is." The developers assume no liability for the misuse of this protocol or for any content transmitted through the mesh. Users must adhere to local regulations and organizational policies.
+| Module | Technical Implementation |
+| :--- | :--- |
+| **P2P Networking** | Utilizes WebRTC data channels for low-latency, direct browser-to-browser links. |
+| **Authentication** | Client-side "Identity Vault" utilizing localStorage for persistent session management. |
+| **Admin Panel** | Elevated privilege system for network broadcasting and local session clearing. |
+| **User Interface** | Modern glassmorphism aesthetic built with vanilla CSS and Inter typography. |
 
-📋 System Changelog
-v5.1 (Sentinel)
-Node Verification: Integrated a validation engine to confirm node existence before attempting a handshake.
+## System Architecture
 
-Session HUD: Implemented a "Current Chat" header for real-time tracking of the active peer link.
+CodeChat operates on a decentralized model. Unlike traditional chat apps that upload data to a cloud server, CodeChat uses a signaling server only to facilitate the initial "handshake." Once the connection is established, the signaling server is bypassed, and data flows directly between users.
 
-Error Handling: Added localized audio alerts and visual indicators for failed connection attempts.
 
-v4.9 - v5.0
-Fleet Management: Restored active node tracking within the management interface.
 
-Handshake Optimization: Resolved synchronization issues to allow for seamless multi-node entry.
+## Setup and Deployment
 
-UX Refinement: Transitioned to standard authentication terminology and hardened the logout lifecycle.
+### Technical Requirements
+* A modern web browser with WebRTC support (Chrome, Firefox, Safari, Edge).
+* Standard HTTPS hosting (required for PeerJS functionality in most browsers).
 
-🛠️ Implementation & Use
-Authentication: Initialize your session by providing a unique handle and your authorized password at the entry gate.
+### Local Installation
+1.  Clone the repository to your local machine:
+    ```bash
+    git clone [https://github.com/bingkahu/p2p-comms.git](https://github.com/bingkahu/p2p-comms.git)
+    ```
+2.  Navigate to the directory and open `index.html`.
+3.  No external package managers (npm/yarn) or backend environments (Node.js/Python) are required for core operation.
 
-Node Identification: Your unique 6-digit Node ID is generated upon entry and is visible in the primary navigation sidebar.
+## Project Roadmap
 
-Establishing a Link: To initiate a secure tunnel, enter the target Node ID into the Remote Link field.
+* **SubtleCrypto Integration:** Implementing end-to-end encryption (E2EE) for all transmitted strings.
+* **Binary Data Transfer:** Enabling P2P file sharing via ArrayBuffer streams.
+* **Mesh Networking:** Transitioning from 1-on-1 sessions to multi-peer mesh groups.
+* **Node Logging:** Exporting session transcripts to local JSON files.
 
-Session Termination: To securely wipe your session data and disconnect from the mesh, use the Log Out command located at the base of the sidebar.
+## Contact and Support
 
-⚙️ Technical Specifications
-Framework: PeerJS (WebRTC Implementation)
+For technical inquiries, collaboration proposals, or general feedback, please reach out via the following channel:
 
-Signal Processing: Web Audio API (Synthesized Feedback)
+* **Lead Maintainer:** mgrassi1@outlook.com
 
-Interface: Optimized CSS3 Grid / Flexbox
+## Legal and Licensing
 
-Typography: Plus Jakarta Sans & JetBrains Mono
+### Disclaimer of Liability
+This software is provided "as is," without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose, and non-infringement. In no event shall the authors or copyright holders be liable for any claim, damages, or other liability, whether in an action of contract, tort, or otherwise, arising from, out of, or in connection with the software or the use or other dealings in the software.
+
+### Privacy Notice
+CodeChat does not collect, store, or sell user data. All communication is transient and occurs directly between users. However, users are responsible for the security of their own Peer IDs. Sharing a Peer ID publicly may allow unauthorized nodes to attempt a connection.
+
+### Licensing
+This project is open-source. Please refer to the LICENSE file in the repository for full terms regarding redistribution and modification.
